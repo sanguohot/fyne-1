@@ -1,5 +1,7 @@
 package fyne
 
+import "github.com/go-gl/glfw/v3.3/glfw"
+
 // Window describes a user interface window. Depending on the platform an app
 // may have many windows or just the one.
 type Window interface {
@@ -90,6 +92,8 @@ type Window interface {
 	// Canvas returns the canvas context to render in the window.
 	// This can be useful to set a key handler for the window, for example.
 	Canvas() Canvas
+	GetGlfwWindowSgh() *glfw.Window
+	GetGlfwMonitorSgh() *glfw.Monitor
 
 	// Clipboard returns the system clipboard
 	Clipboard() Clipboard

@@ -56,12 +56,12 @@ var _ fyne.Window = (*window)(nil)
 type window struct {
 	common.Window
 
-	viewport   *glfw.Window
-	viewLock   sync.RWMutex
-	createLock sync.Once
-	decorate   bool
-	closing    bool
-	fixedSize  bool
+	viewport              *glfw.Window
+	viewLock              sync.RWMutex
+	createLock            sync.Once
+	decorate, transparent bool
+	closing               bool
+	fixedSize             bool
 
 	cursor       desktop.Cursor
 	customCursor *glfw.Cursor
@@ -1426,6 +1426,13 @@ func (w *window) create() {
 		} else {
 			glfw.WindowHint(glfw.Decorated, glfw.False)
 		}
+		// sgh: add transparent start
+		if w.transparent {
+			glfw.WindowHint(glfw.TransparentFramebuffer, 1)
+		} else {
+			glfw.WindowHint(glfw.TransparentFramebuffer, 0)
+		}
+		// sgh: add transparent end
 		if w.fixedSize {
 			glfw.WindowHint(glfw.Resizable, glfw.False)
 		} else {
