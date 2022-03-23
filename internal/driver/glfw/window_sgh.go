@@ -42,3 +42,7 @@ func (w *window) GetGlfwWindowSgh() *glfw.Window {
 func (w *window) GetGlfwMonitorSgh() *glfw.Monitor {
 	return w.getMonitorForWindow()
 }
+
+func (w *window) CreateGlfwWindowSgh() {
+	w.createLock.Do(w.create)
+}

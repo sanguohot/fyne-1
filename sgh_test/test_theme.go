@@ -30,7 +30,7 @@ func NewWin() *win {
 	return &win{
 		label: label,
 		x:     800,
-		y:     500,
+		y:     600,
 	}
 }
 
@@ -46,13 +46,16 @@ func createWinCore(title string, borderless bool) fyne.Window {
 func (w *win) draw() {
 	nw := CreateWin(defaultTitle, w.borderless)
 	nw.SetContent(w.label)
-	gm := nw.GetGlfwMonitorSgh()
-	if gm == nil {
-		fmt.Printf("1 view window nil\r\n")
-	} else {
-		fmt.Printf("2 view window is not nil\r\n")
-	}
+	nw.CreateGlfwWindowSgh()
 	w.fyneWin = nw
+	gw := nw.GetGlfwWindowSgh()
+	if gw == nil {
+		panic("init glfw window failed")
+	}
+	x, y := gw.GetPos()
+	if x != w.x || y != w.y {
+		gw.SetPos(w.x, w.y)
+	}
 	w.fyneWin.Show()
 }
 
@@ -92,7 +95,7 @@ func init() {
 func main() {
 	time.Sleep(time.Second * 1)
 	w := NewWin()
-	w.borderless = true
+	w.borderless = false
 	go func() {
 		for {
 			time.Sleep(time.Second * 3)
@@ -121,11 +124,12 @@ func main() {
 				fmt.Printf("view window nil\r\n")
 				continue
 			}
-			if gw != nil {
-				x, y := gw.GetPos()
-				if x != w.x && y != w.y {
-					gw.SetPos(w.x, w.y)
-				}
+			//if w.x <= 0 && w.y <= 0 {
+			//	continue
+			//}
+			x, y := gw.GetPos()
+			if x != w.x || y != w.y {
+				gw.SetPos(w.x, w.y)
 			}
 		}
 	}()

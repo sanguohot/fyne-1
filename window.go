@@ -94,6 +94,7 @@ type Window interface {
 	Canvas() Canvas
 	GetGlfwWindowSgh() *glfw.Window
 	GetGlfwMonitorSgh() *glfw.Monitor
+	CreateGlfwWindowSgh()
 
 	// Clipboard returns the system clipboard
 	Clipboard() Clipboard
