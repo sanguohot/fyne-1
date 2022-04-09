@@ -35,10 +35,10 @@ func main() {
 		//	hello.SetText("Welcome :)11213234234")
 		//}),
 	))
-	w.Show()
+	go w.Show()
 	go func() {
-		time.Sleep(time.Second * 5)
-		gw := w.ViewSgh()
+		time.Sleep(time.Second * 1)
+		gw := w.GetGlfwWindowSgh()
 		if gw != nil {
 			x, y := gw.GetPos()
 			fmt.Printf("x=%d, y=%d\r\n", x, y)

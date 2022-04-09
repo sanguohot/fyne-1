@@ -2,6 +2,7 @@ package test
 
 import (
 	"fyne.io/fyne/v2"
+	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 type testWindow struct {
@@ -136,3 +137,13 @@ func (w *testWindow) ShowAndRun() {
 func (w *testWindow) Title() string {
 	return w.title
 }
+
+func (w *testWindow) GetGlfwWindowSgh() *glfw.Window {
+	return nil
+}
+
+func (w *testWindow) GetGlfwMonitorSgh() *glfw.Monitor {
+	return nil
+}
+
+func (w *testWindow) CreateGlfwWindowSgh() {}
