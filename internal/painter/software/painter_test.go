@@ -55,7 +55,7 @@ func TestPainter_paintGradient_clipped(t *testing.T) {
 	scroll.Move(fyne.NewPos(10, 10))
 	scroll.Resize(fyne.NewSize(50, 50))
 	scroll.Scrolled(&fyne.ScrollEvent{Scrolled: fyne.NewDelta(-30, -30)})
-	cont := fyne.NewContainer(scroll)
+	cont := container.NewWithoutLayout(scroll)
 	c := test.NewCanvas()
 	c.SetPadded(false)
 	c.SetContent(cont)
@@ -87,7 +87,7 @@ func TestPainter_paintImage_clipped(t *testing.T) {
 	scroll.Move(fyne.NewPos(10, 10))
 	scroll.Resize(fyne.NewSize(50, 50))
 	scroll.Scrolled(&fyne.ScrollEvent{Scrolled: fyne.NewDelta(-15, -15)})
-	cont := fyne.NewContainer(scroll)
+	cont := container.NewWithoutLayout(scroll)
 	c := test.NewCanvas()
 	c.SetPadded(false)
 	c.SetContent(cont)
@@ -309,7 +309,7 @@ func TestPainter_paintRectangle_clipped(t *testing.T) {
 	scroll.Move(fyne.NewPos(10, 10))
 	scroll.Resize(fyne.NewSize(50, 50))
 	scroll.Scrolled(&fyne.ScrollEvent{Scrolled: fyne.NewDelta(-10, -10)})
-	cont := fyne.NewContainer(scroll)
+	cont := container.NewWithoutLayout(scroll)
 	c := test.NewCanvas()
 	c.SetPadded(false)
 	c.SetContent(cont)
@@ -340,7 +340,7 @@ func TestPainter_paintText_clipped(t *testing.T) {
 	scroll.Move(fyne.NewPos(10, 10))
 	scroll.Resize(fyne.NewSize(50, 50))
 	scroll.Scrolled(&fyne.ScrollEvent{Scrolled: fyne.NewDelta(-10, -10)})
-	cont := fyne.NewContainer(scroll)
+	cont := container.NewWithoutLayout(scroll)
 	c := test.NewCanvas()
 	c.SetPadded(false)
 	c.SetContent(cont)
@@ -348,4 +348,19 @@ func TestPainter_paintText_clipped(t *testing.T) {
 	p := software.NewPainter()
 
 	test.AssertImageMatches(t, "draw_text_clipped.png", p.Paint(c))
+}
+
+func TestPainter_paintText_boldItalicClip(t *testing.T) {
+	test.ApplyTheme(t, test.Theme())
+	text := canvas.NewText("Dd", theme.ForegroundColor())
+	text.TextStyle.Bold = true
+	text.TextStyle.Italic = true
+	text.TextSize = 42
+	c := test.NewCanvas()
+	c.SetPadded(false)
+	c.SetContent(text)
+	c.Resize(fyne.NewSize(70, text.MinSize().Height))
+	p := software.NewPainter()
+
+	test.AssertImageMatches(t, "draw_text_bolditalic.png", p.Paint(c))
 }

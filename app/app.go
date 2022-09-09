@@ -5,7 +5,7 @@ package app // import "fyne.io/fyne/v2/app"
 
 import (
 	"strconv"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -30,13 +30,16 @@ type fyneApp struct {
 	storage   *store
 	prefs     fyne.Preferences
 
-	running  bool
-	runMutex sync.Mutex
-	exec     func(name string, arg ...string) *execabs.Cmd
+	running uint32 // atomic, 1 == running, 0 == stopped
+	exec    func(name string, arg ...string) *execabs.Cmd
 }
 
 func (a *fyneApp) Icon() fyne.Resource {
-	return a.icon
+	if a.icon != nil {
+		return a.icon
+	}
+
+	return a.Metadata().Icon
 }
 
 func (a *fyneApp) SetIcon(icon fyne.Resource) {
@@ -47,8 +50,11 @@ func (a *fyneApp) UniqueID() string {
 	if a.uniqueID != "" {
 		return a.uniqueID
 	}
+	if a.Metadata().ID != "" {
+		return a.Metadata().ID
+	}
 
-	fyne.LogError("Preferences API requires a unique ID, use app.NewWithID()", nil)
+	fyne.LogError("Preferences API requires a unique ID, use app.NewWithID() or the FyneApp.toml ID field", nil)
 	a.uniqueID = "missing-id-" + strconv.FormatInt(time.Now().Unix(), 10) // This is a fake unique - it just has to not be reused...
 	return a.uniqueID
 }
@@ -58,17 +64,10 @@ func (a *fyneApp) NewWindow(title string) fyne.Window {
 }
 
 func (a *fyneApp) Run() {
-	a.runMutex.Lock()
-
-	if a.running {
-		a.runMutex.Unlock()
+	if atomic.CompareAndSwapUint32(&a.running, 0, 1) {
+		a.driver.Run()
 		return
 	}
-
-	a.running = true
-	a.runMutex.Unlock()
-
-	a.driver.Run()
 }
 
 func (a *fyneApp) Quit() {
@@ -78,7 +77,7 @@ func (a *fyneApp) Quit() {
 
 	a.driver.Quit()
 	a.settings.stopWatching()
-	a.running = false
+	atomic.StoreUint32(&a.running, 0)
 }
 
 func (a *fyneApp) Driver() fyne.Driver {
@@ -95,8 +94,8 @@ func (a *fyneApp) Storage() fyne.Storage {
 }
 
 func (a *fyneApp) Preferences() fyne.Preferences {
-	if a.uniqueID == "" {
-		fyne.LogError("Preferences API requires a unique ID, use app.NewWithID()", nil)
+	if a.UniqueID() == "" {
+		fyne.LogError("Preferences API requires a unique ID, use app.NewWithID() or the FyneApp.toml ID field", nil)
 	}
 	return a.prefs
 }
@@ -105,10 +104,12 @@ func (a *fyneApp) Lifecycle() fyne.Lifecycle {
 	return a.lifecycle
 }
 
-// New returns a new application instance with the default driver and no unique ID
+// New returns a new application instance with the default driver and no unique ID (unless specified in FyneApp.toml)
 func New() fyne.App {
-	internal.LogHint("Applications should be created with a unique ID using app.NewWithID()")
-	return NewWithID("")
+	if meta.ID == "" {
+		internal.LogHint("Applications should be created with a unique ID using app.NewWithID()")
+	}
+	return NewWithID(meta.ID)
 }
 
 func newAppWithDriver(d fyne.Driver, id string) fyne.App {
@@ -137,4 +138,10 @@ func newAppWithDriver(d fyne.Driver, id string) fyne.App {
 	repository.Register("https", intRepo.NewHTTPRepository())
 
 	return newApp
+}
+
+// marker interface to pass system tray to supporting drivers
+type systrayDriver interface {
+	SetSystemTrayMenu(*fyne.Menu)
+	SetSystemTrayIcon(resource fyne.Resource)
 }

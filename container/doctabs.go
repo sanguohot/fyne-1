@@ -69,14 +69,7 @@ func (t *DocTabs) CreateRenderer() fyne.WidgetRenderer {
 	r.action = r.buildAllTabsButton()
 	r.create = r.buildCreateTabsButton()
 	r.box = NewHBox(r.create, r.action)
-	var lastX, lastY float32
 	r.scroller.OnScrolled = func(offset fyne.Position) {
-		// FIXME OnScrolled can be called when the offset hasn't changed (#1868)
-		if offset.X == lastX && offset.Y == lastY {
-			return
-		}
-		lastX = offset.X
-		lastY = offset.Y
 		r.updateIndicator(false)
 	}
 	r.updateAllTabs()
@@ -140,7 +133,7 @@ func (t *DocTabs) SelectedIndex() int {
 	return t.current
 }
 
-// SetItems sets the container’s items and refreshes.
+// SetItems sets the containers items and refreshes.
 func (t *DocTabs) SetItems(items []*TabItem) {
 	setItems(t, items)
 	t.Refresh()
@@ -262,7 +255,6 @@ func (r *docTabsRenderer) buildAllTabsButton() (all *widget.Button) {
 		for i := 0; i < len(r.docTabs.Items); i++ {
 			index := i // capture
 			// FIXME MenuItem doesn't support icons (#1752)
-			// FIXME MenuItem can't show if it is the currently selected tab (#1753)
 			items[i] = fyne.NewMenuItem(r.docTabs.Items[i].Text, func() {
 				r.docTabs.SelectIndex(index)
 				if r.docTabs.popUpMenu != nil {
@@ -270,6 +262,7 @@ func (r *docTabsRenderer) buildAllTabsButton() (all *widget.Button) {
 					r.docTabs.popUpMenu = nil
 				}
 			})
+			items[i].Checked = index == r.docTabs.current
 		}
 
 		r.docTabs.popUpMenu = buildPopUpMenu(r.docTabs, all, items)
@@ -360,6 +353,7 @@ func (r *docTabsRenderer) scrollToSelected() {
 		}
 	}
 	r.scroller.Offset = offset
+	r.updateIndicator(false)
 }
 
 func (r *docTabsRenderer) updateIndicator(animate bool) {

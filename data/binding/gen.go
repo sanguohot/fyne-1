@@ -1,3 +1,4 @@
+//go:build ignore
 // +build ignore
 
 package main
@@ -119,11 +120,9 @@ func (b *boundExternal{{ .Name }}) Reload() error {
 const prefTemplate = `
 type prefBound{{ .Name }} struct {
 	base
-	key string
-	p   fyne.Preferences
-
-	cacheLock sync.RWMutex
-	cache     {{ .Type }}
+	key   string
+	p     fyne.Preferences
+	cache atomic.Value // {{ .Type }}
 }
 
 // BindPreference{{ .Name }} returns a bindable {{ .Type }} value that is managed by the application preferences.
@@ -149,10 +148,8 @@ func BindPreference{{ .Name }}(key string, p fyne.Preferences) {{ .Name }} {
 
 func (b *prefBound{{ .Name }}) Get() ({{ .Type }}, error) {
 	cache := b.p.{{ .Name }}(b.key)
-	b.cacheLock.Lock()
-	b.cache = cache
-	b.cacheLock.Unlock()
-	return b.cache, nil
+	b.cache.Store(cache)
+	return cache, nil
 }
 
 func (b *prefBound{{ .Name }}) Set(v {{ .Type }}) error {
@@ -165,13 +162,13 @@ func (b *prefBound{{ .Name }}) Set(v {{ .Type }}) error {
 }
 
 func (b *prefBound{{ .Name }}) checkForChange() {
-	b.cacheLock.RLock()
-	cache := b.cache
-	b.cacheLock.RUnlock()
-	if b.p.{{ .Name }}(b.key) == cache {
-		return
+	val := b.cache.Load()
+	if val != nil {
+		cache := val.({{ .Type }})
+		if b.p.{{ .Name }}(b.key) == cache {
+			return
+		}
 	}
-
 	b.trigger()
 }
 `
@@ -586,9 +583,15 @@ type boundExternal{{ .Name }}ListItem struct {
 }
 
 func (b *boundExternal{{ .Name }}ListItem) setIfChanged(val {{ .Type }}) error {
+	{{- if eq .Comparator "" }}
 	if val == b.old {
 		return nil
 	}
+	{{- else }}
+	if {{ .Comparator }}(val, b.old) {
+		return nil
+	}
+	{{- end }}
 	(*b.val)[b.index] = val
 	b.old = val
 
@@ -636,7 +639,11 @@ func main() {
 	}
 	defer itemFile.Close()
 	itemFile.WriteString(`
-import "fyne.io/fyne/v2"
+import (
+	"bytes"
+
+	"fyne.io/fyne/v2"
+)
 `)
 	convertFile, err := newFile("convert")
 	if err != nil {
@@ -657,7 +664,7 @@ import (
 	defer prefFile.Close()
 	prefFile.WriteString(`
 import (
-	"sync"
+	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 )
@@ -671,7 +678,11 @@ const keyTypeMismatchError = "A previous preference binding exists with differen
 	}
 	defer listFile.Close()
 	listFile.WriteString(`
-import "fyne.io/fyne/v2"
+import (
+	"bytes"
+
+	"fyne.io/fyne/v2"
+)
 `)
 
 	item := template.Must(template.New("item").Parse(itemBindTemplate))
@@ -681,6 +692,7 @@ import "fyne.io/fyne/v2"
 	list := template.Must(template.New("list").Parse(listBindTemplate))
 	binds := []bindValues{
 		bindValues{Name: "Bool", Type: "bool", Default: "false", Format: "%t", SupportsPreferences: true},
+		bindValues{Name: "Bytes", Type: "[]byte", Default: "nil", Since: "2.2", Comparator: "bytes.Equal"},
 		bindValues{Name: "Float", Type: "float64", Default: "0.0", Format: "%f", SupportsPreferences: true},
 		bindValues{Name: "Int", Type: "int", Default: "0", Format: "%d", SupportsPreferences: true},
 		bindValues{Name: "Rune", Type: "rune", Default: "rune(0)"},

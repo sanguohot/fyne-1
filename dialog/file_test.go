@@ -119,7 +119,7 @@ func TestFileDialogResize(t *testing.T) {
 	//Mimic the fileopen dialog
 	d := &fileDialog{file: file}
 	open := widget.NewButton("open", func() {})
-	ui := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, nil, open), open)
+	ui := container.NewBorder(nil, nil, nil, open)
 	originalSize := ui.MinSize().Add(fyne.NewSize(fileIconCellWidth*2+theme.Padding()*4,
 		(fileIconSize+fileTextSize)+theme.Padding()*4))
 	d.win = widget.NewModalPopUp(ui, file.parent.Canvas())
@@ -431,6 +431,7 @@ func TestView(t *testing.T) {
 		assert.Nil(t, reader)
 	}, win)
 
+	dlg.SetConfirmText("Yes")
 	dlg.SetDismissText("Dismiss")
 	dlg.Show()
 
@@ -472,6 +473,8 @@ func TestView(t *testing.T) {
 	assert.Equal(t, "", toggleViewButton.Text)
 	assert.Equal(t, theme.ListIcon(), toggleViewButton.Icon)
 
+	confirm := ui.Objects[2].(*fyne.Container).Objects[0].(*fyne.Container).Objects[1].(*widget.Button)
+	assert.Equal(t, "Yes", confirm.Text)
 	dismiss := ui.Objects[2].(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*widget.Button)
 	assert.Equal(t, "Dismiss", dismiss.Text)
 }
